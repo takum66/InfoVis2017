@@ -53,16 +53,17 @@ function main()
       geometry.faces.push( new THREE.Face3( faces[i][0], faces[i][1], faces[i][2] ) );
     }
 
-    var material = new THREE.MeshBasicMaterial();
+    var material = new THREE.MeshLambertMaterial();
     material.side = THREE.BackSide;
     material.vertexColors = THREE.FaceColors;
     geometry.faces[0].color = new THREE.Color( 1, 0, 0 );
+    geometry.computeFaceNormals();
 
     var cube = new THREE.Mesh( geometry, material );
     scene.add( cube );
 
     var light = new THREE.PointLight( 0xffffff );
-    light.position.set( 5, 5, 5 );
+    light.position.set( 1, 1, 5 );
     scene.add( light );
     
     document.addEventListener( 'mousedown', mouse_down_event );
