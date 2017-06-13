@@ -1,41 +1,26 @@
-function Isosurfaces( volume, isovalue )
+function Isosurfaces( volume, isovalue, screen, cmap )
 {
-    var width = 500;
-    var height = 500;
-
-    var scene = new THREE.Scene();
-
-    var fov = 45;
-    var aspect = width / height;
-    var near = 1;
-    var far = 1000;
-
-    var camera = new THREE.PerspectiveCamera( fov, aspect, near, far );
-    camera.position.set( 0, 0, 5 );
-    scene.add( camera );
-
-    var light = new THREE.PointLight();
-    light.position.set( 5, 5, 5 );
-    scene.add( light );
-
-    var renderer = new THREE.WebGLRenderer();
-    renderer.setSize( width, height );
-    document.body.appendChild( renderer.domElement );
-
     var geometry = new THREE.Geometry();
-    var material = new THREE.ShaderMaterial({
-      vertexColors: THREE.VertexColors,
-      vertexShader: document.getElementById('gouraud.vert').textContent,
-      fragmentShader: document.getElementById('gouraud.frag').textContent,
-      uniforms: {
-        light_position: { type: 'v3', value: light.position },
-        camera_position: { type: 'v3', value: camera.position }
-      }
-    });
 
     var smin = volume.min_value;
     var smax = volume.max_value;
     isovalue = KVS.Clamp( isovalue, smin, smax );
+
+    var material = new THREE.MeshLambertMaterial();
+
+    /*materialColor = new THREE.Color().setHex( '0x' + cmap[isovalue][1] );
+    var material = new THREE.ShaderMaterial({
+      vertexColors: THREE.VertexColors,
+      vertexShader: document.getElementById('gouraud.vert').text,
+      fragmentShader: document.getElementById('gouraud.frag').text,
+      uniforms: {
+        light_position: { type: 'v3', value: screen.light.position },
+        camera_position: { type: 'v3', value: screen.camera.position },
+        m_color: { type: 'v3', value: materialColor }
+      }
+    });*/
+
+    material.color = new THREE.Color().setHex( '0x' + cmap[isovalue][1] );
 
     var lut = new KVS.MarchingCubesTable();
     var cell_index = 0;
@@ -92,10 +77,7 @@ function Isosurfaces( volume, isovalue )
 
     geometry.computeVertexNormals();
 
-    material.color = new THREE.Color( "white" );
-
-    return new THREE.Mesh( geometry, material );
-
+    return [ geometry, material ];
 
     function cell_node_indices( cell_index )
     {
@@ -140,6 +122,14 @@ function Isosurfaces( volume, isovalue )
 
     function interpolated_vertex( v0, v1, s )
     {
-        return new THREE.Vector3().addVectors( v0, v1 ).divideScalar( 2 );
+        var i0 = v0.x + (v0.y * volume.resolution.x) + (v0.z * volume.resolution.x * volume.resolution.y);
+        var i1 = v1.x + (v1.y * volume.resolution.x) + (v1.z * volume.resolution.x * volume.resolution.y);
+
+        var s0 = volume.values[i0][0];
+        var s1 = volume.values[i1][0];
+
+        var t = (s-s0) / (s1-s0);
+
+        return new THREE.Vector3().addVectors( v0.multiplyScalar(1-t), v1.multiplyScalar(t) );
     }
 }
